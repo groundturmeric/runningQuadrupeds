@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		
+		<!-- D3.js -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+        <link rel="stylesheet" type="text/css" href="./style/style.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.0/gsap.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.0/ScrollTrigger.min.js"></script>
+	
+	</head>	
+	<body>
+
+				
+		<h1>top recorded speed </h1>
+		<div id="chart" style="text-align: center;">
+
+
+
+		
+		
+		
+		
+		
+		
+		</div>
+	
+		<script language="javascript" type="text/javascript">
+
+			///////////////////////////////////////////////////////////////////////////
+			//////////////////// Set up and initiate svg containers ///////////////////
+			///////////////////////////////////////////////////////////////////////////	
+
+			var margin = {
+				top: 10,
+				right: 10,
+				bottom: 10,
+				left: 10
+			};
+			// var width = 400,
+			// 	height = 400;
+			var width = 800,
+			height = 800;
+						
+			//SVG container
+			var svg = d3.select('#chart')
+				.append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", 3*height )
+				.append("g")
+				.attr("transform", "translate(" + (margin.left + width/2) + "," + (margin.top + height/2) + ")");
+
+
+
+							///////////////////////////////////////////////////////////////////////////
+			///////////////////////////// Data Array ///////////////////////////////
+			///////////////////////////////////////////////////////////////////////////	
+			var animals = [
+				{id: 1, animal: 'Cheetah', speed: 120, mass:160 ,heartrythm:250, image: 'cheetah'},
+				{id: 2, animal: 'Horse', speed: 88, mass:1900, heartrythm: 180, image: `url('/images/hore.gif')`}, //what is going on with image?
+				{id: 3, animal: 'Lion', speed: 80, mass: 420, heartrythm: 76,image: 'lion'},
+				// {id: 4, animal: 'Ostrich', speed: 70, mass:320, heartrythm:? ,image: 'ostrich'},
+				{id: 5, animal: 'Greyhound', speed: 63.5,mass:75,heartrythm:90,  image: 'greyhound'},
+				{id: 6, animal: 'Grizzly bear', speed: 56, mass:790, heartrythm:90, image: 'grizzly_bear'},
+				{id: 7, animal: 'Rabbit', speed: 48, mass:5, heartrythm:300, image: 'rabbit'},
+				{id: 8, animal: 'Cat', speed: 48, mass: 10, heartrythm: 220, image: 'cat'},
+				// {id: 9, animal: 'Usain Bolt', speed: 45, mass:207, image: 'human'},
+				{id: 10, animal: 'Squirrel', speed: 20, mass:1.5, heartrythm:420, image: 'squirrel'},
+				{id: 11, animal: 'House mouse', speed: 13, mass:0.1, heartrythm: 750, image: 'house_mouse'},
+				{id: 12, animal: 'Giant tortoise', speed: 0.3, mass:500, heartrythm:6, image: 'tortoise'}
+			];
+
+
+
+			    /////////////////////////////////////////////*
+    ///DETERMINE MIN AND MAX VALUES OF VARIABLES/////
+    //////////////////////////////////////////////*/
+    const speeds = {
+        min: d3.min(animals, function(d) { return +d.speed; }),
+        max: d3.max(animals, function(d) { return +d.speed; })
+    };
+
+	const weights = {
+        min: d3.min(animals, function(d) { return +d.mass; }),
+        max: d3.max(animals, function(d) { return +d.mass; })
+    };
+
+            ////////////SCALES//////////////////////////////
+			//speed scale is inversed in the range, smaller speeds get biger duration
+			var maxSpeed = d3.max(animals, function(d) { return d.speed; });
+
+			var speedScale = d3.scale.linear()
+		    .domain([speeds.min, speeds.max])
+			.range([30000, 10000])
+			//.range([maxS, maxSpeed]);
+
+			var massScale = d3.scale.linear()
+		    .domain([weights.min, weights.max])
+			.range([5, 89])
+
+
+
+		
+	
+			///////////////////////////////////////////////////////////////////////////
+			///////////////////////////// Create filter ///////////////////////////////
+			///////////////////////////////////////////////////////////////////////////	
+
+			//SVG filter for the gooey effect
+			//Code taken from http://tympanus.net/codrops/2015/03/10/creative-gooey-effects/
+			var defs = svg.append("defs");
+			var filter = defs.append("filter").attr("id","gooeyCodeFilter");
+			filter.append("feGaussianBlur")
+				.attr("in","SourceGraphic")
+				.attr("stdDeviation","10")
+				//to fix safari: http://stackoverflow.com/questions/24295043/svg-gaussian-blur-in-safari-unexpectedly-lightens-image
+				.attr("color-interpolation-filters","sRGB") 
+				.attr("result","blur");
+			filter.append("feColorMatrix")
+				.attr("in","blur")
+				.attr("mode","matrix")
+				.attr("values","1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9")
+				.attr("result","gooey");
+
+
+
+
+		///////////////////////////////////////////////////////////////////////////
+		/////////////////////////// Create circles ////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////	
+
+		//Create scale
+		var xScale = d3.scale.linear()
+			.domain([-1.25, 1.25])
+			.range([-width/2, width/2]);
+
+
+		
+		//Create a wrapper for the circles that has the Gooey effect applied to it
+		var circleWrapper = svg.append("g")
+			//.style("filter", "url(#gooeyCodeFilter)");
+
+		//Create the circles that will move out and in the center circle
+		var steps = 2;
+		//var colors = [ "#B7D84B", "#44ACCF",];
+		var colors = ["#F95B34", "#EE3E64", "#F36283", "#FF9C34", "#EBDE52", "#B7D84B", "#44ACCF"];
+
+			animals.forEach((d, i) => {
+				d.fixedAngle = (i/steps)*(2*Math.PI);
+				d.randomAngle = (i/steps)*(2*Math.PI);
+				d.color = colors[i%colors.length]
+				//d.r = Math.floor(Math.random() * 20 + 15);
+			})
+		// for (var i = 0; i < steps; i++) {
+		// 	flyCircleData.push({ 
+		// 		fixedAngle: (i/steps)*(2*Math.PI),
+		// 		randomAngle: (i/steps)*(2*Math.PI),
+		// 		speed: Math.random() * 7000 + 3000,
+		// 		r: Math.floor(Math.random() * 20 + 15),
+		// 		color: colors[i%colors.length]
+		// 	})
+		// }//for i
+
+		//Set up the circles
+		//const flyCircles = circleWrapper.selectAll(".flyCircle")
+		var flyCircles = circleWrapper.selectAll(".flyCircle")
+			.data(animals)
+			.enter().append("circle")
+			.attr("class", "flyCircle")
+			.style("fill", function(d) { return d.color; })
+			.attr("cy", 0)
+			.attr("cx", 0)
+			.attr("r", 3)
+			.transition().duration(1000).delay(function(d) { return xScale(Math.sin(d.fixedAngle)); })
+			.attr("cy", function(d) { return xScale(Math.sin(d.fixedAngle)); })
+			.attr("cx", function(d) { return xScale(Math.cos(d.fixedAngle)); })
+			// .attr("cy", 0)
+			// .attr("cx", 100)
+			.attr("r",function(d) { return massScale(d.mass) })
+			.each("end", goRound)
+			.style("fill-opacity", 0.3)
+        .attr("stroke", "gray")
+        .style("stroke-width", 2)
+		.attr("background-color", "rgba(255, 82, 82, 1)")
+		.attr("border-radius", "50%")
+		;
+		
+// 		.runningCircle {
+// 	background-color: rgba(255, 82, 82, 1);
+// 	border-radius: 50%;
+// 	animation: pulse-red 2s infinite;
+// 	height: 400px;
+// 	width: 400px;
+// }
+
+		//Continuously moves the circles with different speeds
+		
+				//Continuously moves the circles with different speeds
+				function goRound(d) {
+			d3.select(this)
+				.transition().duration(function(d) { return speedScale(d.speed); })
+				.ease("linear")
+				.attrTween("transform", function() { return d3.interpolateString("rotate(0)", "rotate(360)"); })
+				.each("end", goRound);
+		}//function goRound
+
+		//function goRound
+
+/////////////////////////////////////////////////////////////////////
+////////////////////* TOOLTIP/////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
+const tooltip = d3.select("#chart")
+      .append("div")
+      .attr("class", "tooltip");
+
+
+
+
+  d3.selectAll(".flyCircle")
+  .on("mouseover", function(d, i) {
+
+
+
+//not sure how to use these:
+// let cx = +d3.select(this).attr("cx");
+// let cy = +d3.select(this).attr("cy");
+
+
+tooltip.style("visibility", "visible")
+.html(`<b>animal:</b> ${d.animal} <br><b>speed:</b> ${d.speed}</br>`)
+.style("top", (event.pageY)+"px")
+.style("left",(event.pageX)+"px");
+//   .style("left", `${cx}px`)
+//   .style("top", `${cy}px`)
+//.html(`<b>Year:</b> ${d.year}<br><b>Production:</b> ${d.production} lbs`);
+
+d3.select(this)
+  .attr("stroke", "#F6C900")
+  .attr("stroke-width", 1);
+
+}).on("mouseout", function() {
+
+//tooltip.style("visibility", "hidden");
+
+d3.select(this)
+  .attr("stroke", "none")
+  .attr("stroke-width", 2)
+.attr("stroke", "gray");
+
+});
+//////////////////////////////////////////////////////////
+////////////////////////////Text//////////////////////////
+/////////////////////////////////////////////////////////
+var text = d3.selectAll(".flyCircle")
+			.data(animals)
+			.enter().append("circle")
+			.attr("class", "flyCircle")
+			.style("fill", function(d) { return d.color; })
+			.attr("cy", 0)
+			.attr("cx", 0)
+			.attr("r", 0)
+			.transition().duration(1000).delay(function(d) { return xScale(Math.sin(d.fixedAngle)); })
+			.attr("cy", function(d) { return xScale(Math.sin(d.fixedAngle)); })
+			.attr("cx", function(d) { return xScale(Math.cos(d.fixedAngle)); })
+			// .attr("cy", 0)
+			// .attr("cx", 100)
+			.attr("r",function(d) { return d.mass/2; })
+			.each("end", goRound)
+			.style("fill-opacity", 0.3)
+        .attr("stroke", "gray")
+        .style("stroke-width", 2)
+		.attr("background-color", "rgba(255, 82, 82, 1)")
+		.attr("border-radius", "50%")
+		;
+		
+/////////////////////////scrolltrigger//////////////////////
+
+
+// gsap doesn't come with scroll trigger
+// so we need to add this plugin manually
+// gsap.registerPlugin(ScrollTrigger);
+
+// // creating a trigger
+// gsap.to('#chart', {
+//     scrollTrigger: {
+//         trigger: '.flyCircle',
+//         start: 'top center',
+//         end: `bottom 300px`,
+//         markers: true,
+//         toggleActions: 'play reverse none none',
+//         // onEnter onLeave onEnterBack onLeaveBack
+//         // possible values: play, restart, reverse, resume, complete, none
+//         // scrub: 3
+//         // this property makes the animation connected to the scrollbar
+//     },
+//     y: 500,
+//     duration: 1
+// });
+
+// gsap.registerPlugin(ScrollTrigger);
+
+
+gsap.to('#chart',{
+    scrollTrigger:{
+        trigger:".flyCircle",
+        endTrigger:'#chart',
+        start: 'top 100px',
+        end: 'bottom 300px',
+        markers:true,
+        //scrub:true,
+        scrub:1,
+        // pin: '#square-two'
+        //pin keeps it in place wherever it is, until idname of pinned element crosses back
+    },
+    y:3000,
+    // rotate: '360deg',
+});	
+
+
+
+		</script>
+
+	</body>
+</html>

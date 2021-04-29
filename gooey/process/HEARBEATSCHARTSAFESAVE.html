@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://d3js.org/d3.v6.js"></script>
+  <style>
+    html, body {
+      margin: 0px;
+      padding: 0px;
+      text-align: center;
+    }
+
+    #Cheetah {
+
+  animation: mymove 0.24s infinite;
+}
+
+
+#Horse {
+
+animation: mymove 0.333s infinite;
+}
+
+
+#Lion {
+
+animation: mymove 0.789s infinite;
+}
+
+#Greyhound {
+
+animation: mymove 0.666s infinite;
+}
+
+#Grizzly {
+
+animation: mymove 0.666s infinite;
+}
+
+
+#Cat {
+
+animation: mymove 0.2727s infinite;
+}
+
+#Rabbit {
+
+animation: mymove 0.2s infinite;
+}
+
+#Squirrel {
+
+animation: mymove 0.142s infinite;
+}
+
+
+#Mouse {
+
+animation: mymove 0.08s infinite;
+}
+
+
+#Tortoise {
+
+animation: mymove 10s infinite;
+}
+
+
+@keyframes mymove {
+  90% {r: 15px;}
+}
+
+
+path{ color: white;}
+
+
+
+
+
+    
+
+svg {
+      margin-top: 50px;
+    }
+    .axisLabel {
+      font-family:Arial, Helvetica, sans-serif;
+      font-size: 8pt;
+      font-weight: bold;
+      fill:white;
+      
+    }
+
+    
+
+
+
+    
+      
+.axis{
+  stroke: white;
+}
+
+
+      body {
+            background-color: black;
+        }
+</style>
+</head>
+<body>
+  <script>
+
+      /*
+      SETTING UP THE SVG CANVAS
+      */
+      const width = 800;
+      const height = 500;
+      const margin = {top: 25, left: 75, right: 25, bottom: 75};
+
+      /*
+      CREATE THE SVG CANVAS
+      */
+      const svg = d3.select("body")
+        .append("svg")
+        .attr("width",width)
+        .attr("height", height);
+
+      /*
+      DEFINE DATA SET
+
+      Data taken from the following websites:
+
+      Median rent for one-bedroom apartment, Winter 2020
+      https://realestate.boston.com/renting/2020/01/23/median-rent-every-boston-neighborhood/
+      
+   weather data from: https://www.accuweather.com/en/us/boston/02108/october-weather/348735?year=2020
+      */
+      const animals = [
+				{id: 'Cheetah', animal: 'Cheetah', speed: 75, mass:160 ,heartrythm:250, image: `url('/images/Cheetah.gif')`, imagename:`Cheetah`},
+				{id: 'Horse', animal: 'Horse', speed: 55, mass:1900, heartrythm: 180, image: `url('/images/Horse.gif')`,imagename:`Horse`}, //what is going on with image?
+				{id: 'Lion', animal: 'Lion', speed:50, mass: 420, heartrythm: 76,image: `url('/images/Lion.gif')`,imagename:`Lion`},
+				// {id: 4, animal: 'Ostrich', speed: 70, mass:320, heartrythm:? ,image: 'ostrich'},
+				{id: 'Greyhound', animal: 'Greyhound', speed: 45,mass:75,heartrythm:90,  image: `url('/images/Greyhound.gif')`, imagename:`Greyhound`},
+				{id: 'Grizzly', animal: 'Grizzly bear', speed: 35, mass:790, heartrythm:90, image: `url('/images/Grizzly.gif')`, imagename:`Grizzly`},
+				{id: 'Cat', animal: 'Cat', speed: 30, mass: 10, heartrythm: 220, image: `url('/images/Cat.gif')`, imagename:`Cat`},
+				// {id: 9, animal: 'Usain Bolt', speed: 45, mass:207, image: 'human'},
+				{id: 'Rabbit', animal: 'Rabbit', speed: 25, mass:5, heartrythm:300, image: `url('/images/Rabbit.gif')`, imagename:`Rabbit`},
+				{id: 'Squirrel', animal: 'Squirrel', speed: 20, mass:1.5, heartrythm:420, imagename: 'Squirrel'},
+				{id: 'Mouse', animal: 'House mouse', speed: 8, mass:0.1, heartrythm: 750, image: `url('/images/Mouse.gif')`, imagename:`Mouse`},
+				{id: 'Tortoise', animal: 'Giant tortoise', speed: 0.3, mass:500, heartrythm:6, image: 'tortoise', imagename:`Gturtle`}
+			];
+
+          
+// duration is 1000 for 1s
+// heartrythm is in beats per 60s     beatduration = d.heartrythm*1000/60s
+
+
+
+      /*
+      DEFINE SCALES
+
+      D3 scales allow us to take raw data values -- in their original units --
+      and convert them into other kinds of values, e.g., pixel position
+      on the screen
+
+      There are MANY different kinds of D3 scales!
+      Here, we will demonstrate d3.scaleLinear(), which takes values in
+      a continuous domain and maps them to values in a continuous range:
+
+      d3.scaleLinear()
+        .domain([DATA_MIN, DATA_MAX])
+        .range([PIXEL_MIN, PIXEL_MAX]);
+
+      */
+      // Creating a scale for the x-axis, with income data
+      // const xScale = d3.scaleLinear()
+      //   .domain([0,31])
+      //   .range([margin.left, width-margin.right]);
+
+        let xScale = d3.scaleBand()
+            .domain(animals.map(d => d.animal))
+            .range([margin.left, width-margin.right])
+            .padding(0.3);
+
+      // Creating a scale for the y-axis, with rent data
+      const yScale = d3.scaleLinear()
+        .domain([0,100])
+        .range([height-margin.bottom, margin.top]);
+
+
+        var colors = [ "#EBDE52","#F95B34", "#FF9C34", "#EE3E64", "#F36283",  "#B7D84B","#44ACCF"];
+	animals.forEach((d, i) => {
+				d.color = colors[i%colors.length]
+				//d.r = Math.floor(Math.random() * 20 + 15);
+			})
+
+        //
+
+
+      /*
+      GENERATE AXES
+
+      D3 has built in "axis constructors" that will automatically draw
+      an axis for us, complete with tick marks and labels; these are built
+      from scales we define elsewhere in the code, such as in the
+      previous section
+
+      */
+
+   
+      const xAxis = svg.append("g")
+        .attr("transform",`translate(0,${height-margin.bottom})`)
+        .call(d3.axisBottom().scale(xScale))
+        .style('stroke', 'white');
+
+      const yAxis = svg.append("g")
+        .attr("transform",`translate(${margin.left},0)`)
+        .call(d3.axisLeft().scale(yScale))
+        .style('stroke', 'white');
+
+      /*
+      DRAW THE MARKS
+
+      Finally, we will draw circles for our scatter plot --
+      using the special D3 data bind procedure.
+
+      We'll do some magical hand-waving here for now and unpack this
+      later, but the general pattern is:
+
+      d3.selectAll("SHAPE")
+        .data(DATA)
+        .enter()
+        .append("SHAPE")
+        ...
+     
+
+          walkingdata.forEach(function(d,i) {
+        svg.append("circle")
+          .attr("class", "low")
+          .attr("cx",function(d) { return xScale(d.date); })
+          .attr("cy",function(d) { return yScale(d.low); })
+          .attr("r", function(d) { return (d.totaldistance); })
+      });
+
+rectangles didnt work?
+ const bar1 = svg.selectAll("rect")
+        .data(walkingdata)
+        .enter()
+        .append("rect")
+          .attr("x",  function(d) { return xScale(d.date); })
+          .attr("y", function(d) { return yScale(d.low); })
+          .attr("width",function(d) { return xScale(d.totaldistance); })
+          .attr("height", function(d) { return height - margin.bottom - yScale(d.totaldistance); })
+          .attr("fill","steelblue")
+          .attr("opacity", 1);
+
+ const connections = svg.selectAll("walkingd data")
+        .data(walkingdata)
+        .enter()
+        .append("line")
+        .attr("x1",function(d) { return xScale(d.date); })
+        .attr("x2",function(d) { return xScale(d.date); })
+        .attr("y1",function(i) { return yScale(i.totaldistance); })
+        .attr("y2",function(g) { return yScale(g.totaldistance); })
+        .attr("stroke", "purple")
+        .attr("opacity", 0.5)
+        .attr("stroke-width", function(g) { return 4*(g.totaldistance); }); 
+         */
+
+;
+var bars = svg.selectAll("rect")
+    .data(animals)
+    .enter()
+.append('rect')
+  .attr('x',function(d) { return xScale(d.animal); })
+//   .attr('y', 300)
+.attr("y",   0)
+  .attr('width', 30)
+  .attr('height', 0)
+  .attr('stroke', 'black')
+  .style("fill", function(d) { return d.color; })
+  .style("fill-opacity", 0.1)
+  .transition()
+            .duration(5000)
+			.attr('height', function(d) { return d.speed*5})
+            .delay((d, i) => i* 20)
+            .transition()
+            .duration(500);
+
+//             var bars2 = svg.selectAll("rect")
+//     .data(animals)
+//     .enter()
+// .append('rect')
+//   .attr('x', 0)
+// //   .attr('y', 300)
+// .attr("y",   function(d,i) { return i*50 +350})
+//   .attr('width', 0)
+//   .attr('height', 40)
+//   .attr('stroke', 'black')
+//   .attr('fill','orange')
+//   .style("fill-opacity", 0.8)
+//   .transition()
+//             .duration(500)
+// 			.attr('width', function(d) { return d.speed*5})
+//             .attr('x', d => 0)
+//             .delay((d, i) => i* 20)
+//             .transition()
+//             .duration(500);
+
+
+
+              
+
+                   function circleTransition() {
+
+                    var hearbeatcircle = svg.selectAll("beat")
+        .data(animals) 
+        .enter()
+        .append("circle")
+        .attr("id", function(d) { return d.id})
+          .attr("class", "beat")
+          .attr("cx", function(d) { return xScale(d.animal)+ 20; })
+          .attr("cy", function(d) { return yScale(d.speed); })
+          .attr("r",22)
+          .attr("opacity", 0.4)
+          // .attr('stroke', 'red')
+          .style("fill", function(d) { return d.color; });
+          
+          repeat();
+          //<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3
+          // >>>>>>>>>><<<<<<<<3<3<3<3-----<3----HEARTBEATS BY ID (couldn't figure out a function)
+          //<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3<3
+          function repeat() { 
+     
+          //  d3.select("#Cheetah").transition()
+          //          .duration(120)// heartrythm
+          //         // .duration( function (d)  { return (d.heartrythm/2)})  
+          //         // .duration( function (d)  { return d.heartrythm*1000000/120 })  
+          //          .attr("r",33)
+          //          .transition()
+          //          .duration(120)  
+          //          .attr("r",22)
+          //          .on("end", repeat);
+
+                
+
+          //          d3.select("#Horse").transition()
+          //          .duration(120)// heartrythm
+          //         // .duration( function (d)  { return (d.heartrythm/2)})  
+          //         // .duration( function (d)  { return d.heartrythm*1000000/120 })  
+          //          .attr("r",33)
+          //          .transition()
+          //          .duration(120)  
+          //          .attr("r",22)
+          //          .on("end", repeat);
+
+                   };
+
+
+                   }
+
+                circleTransition();
+
+                  //  .ease("linear");
+                  
+                  //  .attr('r', function(d) { return d.heartrythm*0.05});
+             
+const heartcircle = svg.selectAll("heart")
+        .data(animals)
+        .enter()
+        .append("circle")
+          .attr("class", "heart")
+          .attr("cx", function(d) { return xScale(d.animal)+20; })
+          .attr("cy", function(d) { return yScale(d.speed); })
+          .attr("r", 5)
+          .attr("fill-opacity", 0.7) 
+          .style("fill", "red");
+
+
+        //   const connections  = svg.selectAll("walkingd data")
+        // .data(walkingdata)
+        // .enter()
+        // .append("line")
+        // .attr("x1",function(d) { return xScale(d.date); })
+        // .attr("x2",function(d) { return xScale(d.date+1); })
+        // .attr("y1",function(i) { return yScale(i.totaldistance); })
+        // .attr("y2",function(i) { return yScale([(i+1)].totaldistance); })
+        // .attr("stroke", "yellow")
+        // .attr("opacity", 0.3)
+        // .attr("stroke-width", function(g) { return (g.totaldistance); });
+   /*
+
+QUESTION>>>>>>?:how can i map the y2 to the value of the height 
+of the next value in the array???? i am trying to connect the centers of the circles 
+with a line graph.
+
+   
+      /*
+      ADDING AXIS LABELS
+
+      */
+      svg.append("text")
+        .attr("class","axisLabel")
+        .attr("x", width/2)
+        .attr("y", height - 10)
+        .attr("text-anchor","middle")
+        .text("October 2020");
+
+      svg.append("text")
+        .attr("class","axisLabel")
+        .attr("x", -height/2)
+        .attr("y", 20)
+        .attr("text-anchor","middle")
+        .attr("transform","rotate(-90)")
+        .text("total miles walked, circles represent highest and lowest temperature of the day");
+
+
+  </script>
+</body>
+</html>
